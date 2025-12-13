@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Loan Default Predictor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 420px;
+            padding: 30px 35px;
+            border-radius: 14px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            animation: fadeIn 0.6s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 25px;
+            text-align: center;
+            color: #2c5364;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #2c5364;
+            box-shadow: 0 0 0 2px rgba(44,83,100,0.15);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #2c5364, #203a43);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        .result {
+            margin-top: 22px;
+            padding: 16px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 15px;
+            display: none;
+        }
+
+        .result.good {
+            background: #e7f7ef;
+            color: #1f7a4f;
+            border: 1px solid #bde5d1;
+        }
+
+        .result.bad {
+            background: #fdeaea;
+            color: #a12929;
+            border: 1px solid #f5bcbc;
+        }
+
+        .prob {
+            margin-top: 8px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Loan Default Predictor</h1>
+
+    <form id="predict-form">
+        <label>Age</label>
+        <input type="number" name="age" required>
+
+        <label>Income</label>
+        <input type="number" name="income" required>
+
+        <label>Loan Amount</label>
+        <input type="number" name="loan_amount" required>
+
+        <label>Loan Term (months)</label>
+        <input type="number" name="loan_term" required>
+
+        <label>Credit Score</label>
+        <input type="number" name="credit_score" required>
+
+        <button type="submit">Predict Risk</button>
+    </form>
+
+    <div id="result" class="result"></div>
+</div>
+
+<script>
+document.getElementById("predict-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+
+    const res = await fetch("/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    });
+
+    const result = await res.json();
+    const box = document.getElementById("result");
+
+    if (result.error) {
+        alert(result.error);
+        return;
+    }
+
+    box.style.display = "block";
+    box.className = "result " + (result.prediction ? "bad" : "good");
+
+    box.innerHTML = `
+        <strong>${result.label}</strong>
+        <div class="prob">
+            Probability of default: <strong>${result.probability}</strong>
+        </div>
+    `;
+});
+</script>
+
+</body>
+</html>
