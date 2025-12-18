@@ -1,179 +1,368 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Loan Default Predictor</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>Loan Default Predictor (Biased vs Unbiased)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <style>
-        * {
-            box-sizing: border-box;
-            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
+  <style>
+    * { box-sizing: border-box; font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body {
+      margin: 0; min-height: 100vh;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      display: flex; align-items: center; justify-content: center; color: #333;
+      padding: 18px;
+    }
+    .wrap { width: 100%; max-width: 980px; display: grid; gap: 16px; grid-template-columns: 1fr; }
+    .header {
+      color: #fff;
+      display:flex; align-items:flex-end; justify-content:space-between; gap: 12px;
+    }
+    .header h1 { margin:0; font-size: 22px; }
+    .header p { margin:0; opacity: 0.85; font-size: 13px; max-width: 520px; }
 
-        body {
-            margin: 0;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #333;
-        }
+    .grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
 
-        .card {
-            background: #ffffff;
-            width: 100%;
-            max-width: 420px;
-            padding: 30px 35px;
-            border-radius: 14px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
-            animation: fadeIn 0.6s ease;
-        }
+    .card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+      animation: fadeIn 0.6s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
+    .form-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 540px) { .form-grid { grid-template-columns: 1fr; } }
 
-        h1 {
-            margin-top: 0;
-            margin-bottom: 25px;
-            text-align: center;
-            color: #2c5364;
-        }
+    label { font-size: 12px; font-weight: 700; margin-bottom: 6px; display:block; color:#1f2d3a; }
+    input, select {
+      width: 100%; padding: 10px 12px;
+      border-radius: 10px; border: 1px solid #cfd6dc;
+      font-size: 14px; outline: none;
+      transition: border 0.2s, box-shadow 0.2s;
+      background: #fff;
+    }
+    input:focus, select:focus {
+      border-color: #2c5364;
+      box-shadow: 0 0 0 2px rgba(44,83,100,0.15);
+    }
+    .hint { font-size: 11px; opacity: 0.75; margin-top: 6px; }
 
-        label {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 5px;
-            display: block;
-        }
+    .actions { display:flex; gap: 10px; margin-top: 12px; }
+    button {
+      flex:1;
+      padding: 12px;
+      background: linear-gradient(135deg, #2c5364, #203a43);
+      color: #fff; border: none; border-radius: 12px;
+      font-size: 14px; font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    button:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+    button:active { transform: translateY(0); box-shadow: none; }
 
-        input {
-            width: 100%;
-            padding: 10px 12px;
-            margin-bottom: 16px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 14px;
-            transition: border 0.2s, box-shadow 0.2s;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: #2c5364;
-            box-shadow: 0 0 0 2px rgba(44,83,100,0.15);
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #2c5364, #203a43);
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.15s;
-        }
-
-        button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-
-        button:active {
-            transform: translateY(0);
-            box-shadow: none;
-        }
-
-        .result {
-            margin-top: 22px;
-            padding: 16px;
-            border-radius: 10px;
-            text-align: center;
-            font-size: 15px;
-            display: none;
-        }
-
-        .result.good {
-            background: #e7f7ef;
-            color: #1f7a4f;
-            border: 1px solid #bde5d1;
-        }
-
-        .result.bad {
-            background: #fdeaea;
-            color: #a12929;
-            border: 1px solid #f5bcbc;
-        }
-
-        .prob {
-            margin-top: 8px;
-            font-size: 14px;
-            opacity: 0.9;
-        }
-    </style>
-</head>
-<body>
-
-<div class="card">
-    <h1>Loan Default Predictor</h1>
-
-    <form id="predict-form">
-        <label>Age</label>
-        <input type="number" name="age" required>
-
-        <label>Income</label>
-        <input type="number" name="income" required>
-
-        <label>Loan Amount</label>
-        <input type="number" name="loan_amount" required>
-
-        <label>Loan Term (months)</label>
-        <input type="number" name="loan_term" required>
-
-        <label>Credit Score</label>
-        <input type="number" name="credit_score" required>
-
-        <button type="submit">Predict Risk</button>
-    </form>
-
-    <div id="result" class="result"></div>
-</div>
-
-<script>
-document.getElementById("predict-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData);
-
-    const res = await fetch("/predict", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-    });
-
-    const result = await res.json();
-    const box = document.getElementById("result");
-
-    if (result.error) {
-        alert(result.error);
-        return;
+    .ghost {
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff;
     }
 
-    box.style.display = "block";
-    box.className = "result " + (result.prediction ? "bad" : "good");
+    .results-wrap { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 540px) { .results-wrap { grid-template-columns: 1fr; } }
 
-    box.innerHTML = `
-        <strong>${result.label}</strong>
-        <div class="prob">
-            Probability of default: <strong>${result.probability}</strong>
+    .result-card {
+      border: 1px solid #e2e7ee;
+      border-radius: 14px;
+      padding: 14px;
+      background: #fbfcfe;
+    }
+    .result-title { display:flex; align-items:center; justify-content:space-between; gap: 10px; }
+    .result-title h3 { margin:0; font-size: 14px; }
+    .badge {
+      display:inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+    }
+    .low { background: #e7f7ef; color: #1f7a4f; border: 1px solid #bde5d1; }
+    .high { background: #fdeaea; color: #a12929; border: 1px solid #f5bcbc; }
+
+    .metric { margin-top: 10px; font-size: 13px; }
+    .metric strong { font-size: 16px; }
+    .small { font-size: 12px; opacity: 0.8; margin-top: 8px; }
+
+    .error {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(255, 235, 235, 0.98);
+      border: 1px solid #f5bcbc;
+      color: #a12929;
+      display: none;
+      white-space: pre-wrap;
+    }
+
+    .json {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #0b1020;
+      color: #e8eefc;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      overflow:auto;
+      display:none;
+      max-height: 260px;
+    }
+
+    .row-top { display:flex; justify-content:space-between; align-items:center; gap: 10px; }
+    .toggle { display:flex; align-items:center; gap: 8px; color:#fff; font-size: 13px; opacity: 0.9; }
+    .toggle input { width:auto; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <h1>Loan Default Predictor</h1>
+        <p>One request → shows <b>Biased</b> vs <b>Unbiased</b> model “default rate” side-by-side.</p>
+      </div>
+      <div class="toggle">
+        <input id="showJson" type="checkbox" />
+        <label for="showJson" style="margin:0; font-weight:700; color:#fff;">Show raw JSON</label>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- INPUT CARD -->
+      <div class="card">
+        <div class="row-top">
+          <h2 style="margin:0; color:#2c5364; font-size:18px;">Inputs</h2>
+          <button class="ghost" type="button" onclick="fillExample()">Fill example</button>
         </div>
-    `;
+
+        <form id="predict-form">
+          <div class="form-grid">
+            <div>
+              <label>Gender (CODE_GENDER)</label>
+              <select name="CODE_GENDER" required>
+                <option value="M">M</option>
+                <option value="F">F</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Age in years (AGE_YEARS → DAYS_BIRTH)</label>
+              <input type="number" name="AGE_YEARS" min="18" max="100" step="1" required />
+              <div class="hint">Backend expects DAYS_BIRTH (negative days). We convert it automatically.</div>
+            </div>
+
+            <div>
+              <label>Income (AMT_INCOME_TOTAL)</label>
+              <input type="number" name="AMT_INCOME_TOTAL" min="0" step="1" required />
+            </div>
+
+            <div>
+              <label>Credit Amount (AMT_CREDIT)</label>
+              <input type="number" name="AMT_CREDIT" min="0" step="1" required />
+            </div>
+
+            <div>
+              <label>Annuity (AMT_ANNUITY)</label>
+              <input type="number" name="AMT_ANNUITY" min="0" step="1" required />
+            </div>
+
+            <div>
+              <label>Income Type (NAME_INCOME_TYPE)</label>
+              <select name="NAME_INCOME_TYPE" required>
+                <option value="Working">Working</option>
+                <option value="Commercial associate">Commercial associate</option>
+                <option value="Pensioner">Pensioner</option>
+                <option value="State servant">State servant</option>
+                <option value="Unemployed">Unemployed</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Education (NAME_EDUCATION_TYPE)</label>
+              <select name="NAME_EDUCATION_TYPE" required>
+                <option value="Higher education">Higher education</option>
+                <option value="Secondary / secondary special">Secondary / secondary special</option>
+                <option value="Incomplete higher">Incomplete higher</option>
+                <option value="Lower secondary">Lower secondary</option>
+                <option value="Academic degree">Academic degree</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Family Status (NAME_FAMILY_STATUS)</label>
+              <select name="NAME_FAMILY_STATUS" required>
+                <option value="Married">Married</option>
+                <option value="Single / not married">Single / not married</option>
+                <option value="Civil marriage">Civil marriage</option>
+                <option value="Separated">Separated</option>
+                <option value="Widow">Widow</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Own Car (FLAG_OWN_CAR)</label>
+              <select name="FLAG_OWN_CAR" required>
+                <option value="N">N</option>
+                <option value="Y">Y</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Own Realty (FLAG_OWN_REALTY)</label>
+              <select name="FLAG_OWN_REALTY" required>
+                <option value="N">N</option>
+                <option value="Y">Y</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="submit">Compare Models</button>
+          </div>
+
+          <div id="err" class="error"></div>
+        </form>
+      </div>
+
+      <!-- OUTPUT CARD -->
+      <div class="card">
+        <h2 style="margin:0; color:#2c5364; font-size:18px;">Results</h2>
+        <div class="hint" style="margin-bottom:10px;">
+          “Default rate” = probability that <b>TARGET = 1</b> (default).
+        </div>
+
+        <div class="results-wrap">
+          <div class="result-card">
+            <div class="result-title">
+              <h3>Biased model</h3>
+              <span id="bBadge" class="badge low">—</span>
+            </div>
+            <div class="metric">Default rate: <strong id="bRate">—</strong></div>
+            <div class="small">Prediction: <span id="bLabel">—</span></div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-title">
+              <h3>Unbiased model</h3>
+              <span id="uBadge" class="badge low">—</span>
+            </div>
+            <div class="metric">Default rate: <strong id="uRate">—</strong></div>
+            <div class="small">Prediction: <span id="uLabel">—</span></div>
+          </div>
+        </div>
+
+        <pre id="json" class="json"></pre>
+      </div>
+    </div>
+  </div>
+
+<script>
+function toPayload(formEl) {
+  const formData = new FormData(formEl);
+  const raw = Object.fromEntries(formData);
+
+  // Convert AGE_YEARS -> DAYS_BIRTH (negative days)
+  const ageYears = Number(raw.AGE_YEARS);
+  delete raw.AGE_YEARS;
+  raw.DAYS_BIRTH = Math.round(-ageYears * 365);
+
+  // Make sure numeric fields are numbers (not strings)
+  raw.AMT_INCOME_TOTAL = Number(raw.AMT_INCOME_TOTAL);
+  raw.AMT_CREDIT = Number(raw.AMT_CREDIT);
+  raw.AMT_ANNUITY = Number(raw.AMT_ANNUITY);
+
+  return raw;
+}
+
+function setCard(prefix, modelOut) {
+  // modelOut = { prediction, label, default_rate }
+  const badge = document.getElementById(prefix + "Badge");
+  const rate  = document.getElementById(prefix + "Rate");
+  const lab   = document.getElementById(prefix + "Label");
+
+  const pred = modelOut.prediction;
+  const lvl = pred === 1 ? "HIGH" : "LOW";
+
+  badge.textContent = lvl;
+  badge.className = "badge " + (pred === 1 ? "high" : "low");
+
+  rate.textContent = modelOut.default_rate;
+  lab.textContent = modelOut.label;
+}
+
+function showError(msg) {
+  const el = document.getElementById("err");
+  el.style.display = "block";
+  el.textContent = msg;
+}
+
+function clearError() {
+  const el = document.getElementById("err");
+  el.style.display = "none";
+  el.textContent = "";
+}
+
+function fillExample() {
+  const f = document.getElementById("predict-form");
+  f.querySelector('[name="CODE_GENDER"]').value = "M";
+  f.querySelector('[name="AGE_YEARS"]').value = 35;
+  f.querySelector('[name="AMT_INCOME_TOTAL"]').value = 120000;
+  f.querySelector('[name="AMT_CREDIT"]').value = 900000;
+  f.querySelector('[name="AMT_ANNUITY"]').value = 45000;
+  f.querySelector('[name="NAME_INCOME_TYPE"]').value = "Working";
+  f.querySelector('[name="NAME_EDUCATION_TYPE"]').value = "Higher education";
+  f.querySelector('[name="NAME_FAMILY_STATUS"]').value = "Married";
+  f.querySelector('[name="FLAG_OWN_CAR"]').value = "N";
+  f.querySelector('[name="FLAG_OWN_REALTY"]').value = "Y";
+}
+
+document.getElementById("showJson").addEventListener("change", (e) => {
+  document.getElementById("json").style.display = e.target.checked ? "block" : "none";
+});
+
+document.getElementById("predict-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearError();
+
+  const payload = toPayload(e.target);
+
+  let res, text, data;
+  try {
+    res = await fetch("/compare", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    text = await res.text();
+    data = JSON.parse(text);
+  } catch (err) {
+    showError("Request failed or server didn't return JSON:\n" + err);
+    return;
+  }
+
+  if (!res.ok || data.error) {
+    showError(data.error || ("HTTP " + res.status + "\n" + text));
+    return;
+  }
+
+  // Expecting: { biased: {...}, unbiased: {...} }
+  setCard("b", data.biased);
+  setCard("u", data.unbiased);
+
+  const jsonBox = document.getElementById("json");
+  jsonBox.textContent = JSON.stringify({ sent: payload, received: data }, null, 2);
 });
 </script>
 
