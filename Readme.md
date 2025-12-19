@@ -20,8 +20,7 @@ This repository is organized into the following modules/folders:
 - `Webapp/` — lightweight web application for running predictions via UI
 - `requirements.txt` — Python dependencies
 
-> If you’re using a specific dataset (e.g., Home Credit Default Risk), keep the raw data **out of git** and follow the “Data” section below.
-
+Data for training available at -- https://www.kaggle.com/c/home-credit-default-risk/data
 ---
 
 ## Project goals
